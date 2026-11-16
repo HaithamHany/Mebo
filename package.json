@@ -1,0 +1,57 @@
+{
+  "name": "mebo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "MeBo (Medical Bot) — a voice-driven astronaut medical companion for the NASA Space Apps Challenge 2026, running Gemma 4 offline through Ollama or online through Hugging Face.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node scripts/start.mjs",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "test": "node --test",
+    "preview": "vite preview",
+    "bridge": "node bridge/server.mjs",
+    "setup": "node scripts/setup.mjs",
+    "piper:download": "node scripts/piper.mjs",
+    "face:download": "node scripts/face-model.mjs",
+    "medical": "node medical/cli.mjs",
+    "medical:seed": "node medical/cli.mjs seed",
+    "medical:serve": "node medical/server.mjs",
+    "knowledge:fetch": "node scripts/knowledge-fetch.mjs"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "@netlify/blobs": "11.1.7",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.7.0",
+    "@react-three/postprocessing": "^3.0.4",
+    "dompurify": "3.4.17",
+    "framer-motion": "^12.43.0",
+    "kokoro-js": "^1.2.1",
+    "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4",
+    "phonemizer": "1.2.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "three": "^0.185.1",
+    "ws": "^8.21.1",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.185.3",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^6.0.4",
+    "oxlint": "^1.75.0",
+    "tsx": "^4.23.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}

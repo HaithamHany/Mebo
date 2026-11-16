@@ -1,0 +1,3 @@
+# The WebSocket handshake test uses RFC 6455's published sample key ("the sample nonce"), not a credential.
+9ee8a6ddbbc7398013f273671d956fe089456091:test/bridge-network.test.mjs:generic-api-key:91
+test/bridge-network.test.mjs:generic-api-key:91

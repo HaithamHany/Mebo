@@ -1,0 +1,16 @@
+# MeBo on Netlify: the app on the CDN, the bridge on Netlify Server
+# (netlify/server/index.mjs). See docs/deploy-netlify.md.
+
+[build]
+  command = "node scripts/netlify-build.mjs"
+  publish = "dist"
+
+[build.environment]
+  # Netlify Server requires Node.js 24 or later (node:sqlite needs 22.13+).
+  NODE_VERSION = "24"
+  # The page talks to this same site: wss://<host>/ws and https://<host>/medical, /health, /tts.
+  VITE_BRIDGE_URL = "same-origin"
+
+[server]
+  # The smallest instance is enough: the model runs on Hugging Face.
+  size = "small"
