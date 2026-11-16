@@ -3,7 +3,7 @@ import { Card } from './Card'
 import { useMedical, workflowView, type WorkflowId } from './telemetry'
 
 /**
- * The medical agents MeBo routes to. The core is the existing Claude agent,
+ * The medical agents MeBo routes to. The core is MeBo's Gemma 4 model,
  * and its readout follows the active tool the same way the tool badge does.
  *
  * The two assessments show what is actually happening (Step 23): the live

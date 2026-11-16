@@ -141,6 +141,17 @@ export function watchConnection(fn: (state: ConnectionState) => void) {
   onConnection = fn
 }
 
+/** Further listeners (status displays); `watchConnection` stays the app's own. Returns the unsubscribe. */
+const connectionListeners = new Set<(state: ConnectionState) => void>()
+export function subscribeConnection(fn: (state: ConnectionState) => void): () => void {
+  connectionListeners.add(fn)
+  return () => connectionListeners.delete(fn)
+}
+function announceConnection(state: ConnectionState) {
+  onConnection?.(state)
+  for (const fn of connectionListeners) fn(state)
+}
+
 export function isConnected(): boolean {
   return socket?.readyState === WebSocket.OPEN
 }
@@ -313,7 +324,7 @@ function connect(): Promise<WebSocket> {
       attempt = 0
       dispatch(ws)
       settle(null)
-      onConnection?.(everConnected ? 'reconnected' : 'open')
+      announceConnection(everConnected ? 'reconnected' : 'open')
       everConnected = true
     }
     ws.onerror = () => {
@@ -345,7 +356,7 @@ function connect(): Promise<WebSocket> {
       settle(new Error('The bridge closed the connection.'))
       if (socket === ws) {
         socket = null
-        onConnection?.('lost')
+        announceConnection('lost')
         scheduleReconnect(ev.code)
       }
     }

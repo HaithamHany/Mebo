@@ -31,7 +31,7 @@ const LOG = [
   'BIOMETRIC LINK / CREW 4 ...... OK',
   'CARDIO MONITOR ............... OK',
   'CABIN ENVIRONMENT ............ OK',
-  'AI CORE / CLAUDE ............. OK',
+  'AI CORE / GEMMA 4 ............ OK',
   'VOICE INTERFACE',
 ]
 

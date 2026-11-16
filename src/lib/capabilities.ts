@@ -37,11 +37,54 @@ let probed = false
  * older than that report is, by definition, older than this page. That is
  * the state in which MeBo has no medical tools and says it has no records.
  */
-export type BridgeStatus = { outdated: boolean; medicalTools: string[] | null }
+export type BridgeStatus = {
+  outdated: boolean
+  medicalTools: string[] | null
+  /** The model the bridge runs, as its /health reports it (provider id and model id), or null. */
+  llm: { provider: string; model: string } | null
+}
 let bridge: BridgeStatus | null = null
+const bridgeListeners = new Set<() => void>()
 
 export function bridgeStatus(): BridgeStatus | null {
   return bridge
+}
+
+/** Be told when the bridge status changes (a probe or a refresh). Returns the unsubscribe. */
+export function onBridgeStatus(fn: () => void): () => void {
+  bridgeListeners.add(fn)
+  return () => bridgeListeners.delete(fn)
+}
+
+/** Read the bridge's /health. Updates and announces the bridge status; returns the raw report, or null. */
+async function readHealth(): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(`${BRIDGE_HTTP_URL}/health`, { signal: AbortSignal.timeout(3000) })
+    if (!res.ok) return null
+    const h = (await res.json()) as {
+      code_changed?: boolean
+      medical_tools?: string[]
+      llm?: { provider?: unknown; model?: unknown }
+    }
+    const tools = Array.isArray(h.medical_tools) ? h.medical_tools : null
+    const llm =
+      h.llm && typeof h.llm.provider === 'string' && typeof h.llm.model === 'string'
+        ? { provider: h.llm.provider, model: h.llm.model }
+        : null
+    bridge = { outdated: h.code_changed === true || tools === null, medicalTools: tools, llm }
+    for (const fn of bridgeListeners) fn()
+    return h
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Ask the bridge again what it runs — after a reconnect, when it may be a
+ * restarted bridge on another provider. Never throws.
+ */
+export async function refreshBridgeStatus(): Promise<void> {
+  await readHealth()
 }
 
 /** The last known capabilities. Read synchronously by the voice and speech
@@ -67,25 +110,10 @@ export async function probeCapabilities(): Promise<Capabilities> {
     probed = true
     return current
   }
-  try {
-    const res = await fetch(`${BRIDGE_HTTP_URL}/health`, {
-      signal: AbortSignal.timeout(3000),
-    })
-    if (res.ok) {
-      const h = (await res.json()) as {
-        stt?: boolean
-        tts?: boolean
-        code_changed?: boolean
-        medical_tools?: string[]
-      }
-      current = { stt: Boolean(h.stt), tts: Boolean(h.tts) }
-      const tools = Array.isArray(h.medical_tools) ? h.medical_tools : null
-      bridge = { outdated: h.code_changed === true || tools === null, medicalTools: tools }
-    }
-  } catch {
-    // Bridge down or slow — stay on the browser engines rather than blocking
-    // boot on a health check that is only an optimisation.
-  }
+  // Bridge down or slow: stay on the browser engines rather than blocking
+  // boot on a health check that is only an optimisation.
+  const h = await readHealth()
+  if (h) current = { stt: Boolean(h.stt), tts: Boolean(h.tts) }
   probed = true
   return current
 }

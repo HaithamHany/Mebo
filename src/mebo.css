@@ -281,6 +281,17 @@ html { background: var(--bg); }
 }
 .ms-link { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 0.06em; }
 .ms-link-state { margin-left: auto; font-family: var(--mono); font-size: 9px; color: var(--ink-dim); }
+/* The model and provider under the AI core line, from the bridge's /health. */
+.ms-link-sub {
+  margin: -2px 0 2px 16px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ------------------------------------------------------------ crew health */
 

@@ -1,5 +1,7 @@
+import { useEffect, useSyncExternalStore } from 'react'
 import { useStore } from '../../store'
-import { usingBridge } from '../../lib/brain'
+import { isConnected, subscribeConnection } from '../../lib/bridge'
+import { bridgeStatus, onBridgeStatus, refreshBridgeStatus } from '../../lib/capabilities'
 import { Card } from './Card'
 import { useMedical, formatMet, fmt, type CrewSummary } from './telemetry'
 
@@ -9,8 +11,28 @@ import { useMedical, formatMet, fmt, type CrewSummary } from './telemetry'
  * The LINKS section is the old SYSTEMS rail moved indoors: the same
  * `connected` list from the bridge, and it still honours `ui.chrome.systems`
  * so the model can hide it exactly as before. The AI core line is the one
- * genuinely live readout on this card — it reports the Claude bridge.
+ * genuinely live readout on this card: the model the bridge reports in its
+ * /health (Gemma 4 on Hugging Face online, or on a local Ollama offline), and
+ * whether the bridge connection is up right now.
  */
+
+/** How a provider id from /health is named on the panel. Unknown ids are shown as they are. */
+const PROVIDER_NAME: Record<string, string> = {
+  huggingface: 'HUGGING FACE · ONLINE',
+  ollama: 'OLLAMA · OFFLINE (LOCAL)',
+}
+
+/** The bridge's reported model, kept current across probes and reconnects. */
+function useAiCore() {
+  const llm = useSyncExternalStore(onBridgeStatus, () => bridgeStatus()?.llm ?? null)
+  const connected = useSyncExternalStore(
+    (notify) => subscribeConnection(notify),
+    () => isConnected(),
+  )
+  // A reconnect can be a restarted bridge on another provider: ask again.
+  useEffect(() => subscribeConnection((state) => state === 'reconnected' && void refreshBridgeStatus()), [])
+  return { llm, connected }
+}
 /** Mean of the crew's latest current daily dose readings, or null. */
 function crewDose(crew: CrewSummary[]): number | null {
   const doses = crew
@@ -28,8 +50,10 @@ export function MissionStatus() {
   const phase = useStore((s) => s.phase)
   const connected = useStore((s) => s.connected)
   const showSystems = useStore((s) => s.ui.chrome.systems)
+  const core = useAiCore()
 
-  const online = phase !== 'offline' && phase !== 'boot'
+  // Online when MeBo is running and its bridge — where the model is — is connected.
+  const online = phase !== 'offline' && phase !== 'boot' && core.connected
 
   const rows: [string, string, string][] = [
     ['CABIN P', cabin.pressure.toFixed(1), 'kPa'],
@@ -65,10 +89,15 @@ export function MissionStatus() {
       </div>
 
       <div className="ms-links">
-        <div className="ms-link">
+        <div className="ms-link" data-provider={core.llm?.provider ?? ''}>
           <span className={`led ${online ? 'led-on' : ''}`} />
-          AI CORE · {usingBridge ? 'CLAUDE AGENT SDK' : 'CLAUDE API'}
+          GEMMA 4 AI CORE
           <span className="ms-link-state">{online ? 'ONLINE' : 'OFFLINE'}</span>
+        </div>
+        <div className="ms-link-sub" title={core.llm ? `${core.llm.provider} · ${core.llm.model}` : undefined}>
+          {core.llm
+            ? `${PROVIDER_NAME[core.llm.provider] ?? core.llm.provider.toUpperCase()} · ${core.llm.model}`
+            : 'MODEL NOT REPORTED'}
         </div>
         {showSystems && (
           <>
